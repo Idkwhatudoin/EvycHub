@@ -1,0 +1,90 @@
+local Library = loadstring(game:HttpGet("https://pastebin.com/raw/vff1bQ9F"))()
+local Window = Library.CreateLib("Evyc Hub v1 📱 | made by wind [WORKING]", "Synapse")
+
+local Tab = Window:NewTab("PvP")
+local Tab2 = Window:NewTab("Player")
+
+local Section = Tab:NewSection("Helps u in pvp with automated functions")
+local Section2 = Tab2:NewSection("Can modify stuffs to outrun enemies")
+
+local Debug = false -- Set this to true if you want debug output.
+local EnableParry = false -- Set this to true to enable parrying.
+local spamming = false -- Initialize spamming variable.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local Player = Players.LocalPlayer or Players.PlayerAdded:Wait()
+local Remotes = ReplicatedStorage:WaitForChild("Remotes", 9e9)
+local Balls = workspace:WaitForChild("Balls", 9e9)
+
+local function printDebug(...)
+    if Debug then
+        warn(...)
+    end
+end
+
+local function VerifyBall(Ball)
+    return typeof(Ball) == "Instance" and Ball:IsA("BasePart") and Ball:IsDescendantOf(Balls) and Ball:GetAttribute("realBall") == true
+end
+
+local function IsTarget()
+    return Player.Character and Player.Character:FindFirstChild("Highlight")
+end
+
+local function Parry()
+    if EnableParry then
+        Remotes:WaitForChild("ParryButtonPress"):Fire()
+    end
+end
+
+Balls.ChildAdded:Connect(function(Ball)
+    if not VerifyBall(Ball) then
+        return
+    end
+
+    printDebug("Ball Spawned:", Ball)
+
+    local OldPosition = Ball.Position
+    local OldTick = tick()
+
+    Ball:GetPropertyChangedSignal("Position"):Connect(function()
+        if IsTarget() then
+            local Distance = (Ball.Position - workspace.CurrentCamera.Focus.Position).Magnitude
+            local Velocity = (OldPosition - Ball.Position).Magnitude
+
+            printDebug("Distance:", Distance)
+            printDebug("Velocity:", Velocity)
+            printDebug("Time:", Distance / Velocity)
+
+            if (Distance / Velocity) <= 10 then
+                Parry()
+            end
+        end
+
+        if tick() - OldTick >= 1/60 then
+            OldTick = tick()
+            OldPosition = Ball.Position
+        end
+    end)
+end)
+
+Section:NewToggle("Auto Parry v2", "Automatically Parry Enemies (even better now)", function(state)
+    EnableParry = state
+end)
+
+Section:NewToggle("Spam Parry", "Don't use unless in fast 1v1's (cooldown can end you)", function(state)
+    spamming = state
+    while spamming do
+        Remotes.ParryButtonPress:Fire()
+        wait(0.5) -- Adjust the wait time as needed
+    end
+end)
+
+Section2:NewSlider("WalkSpeed", "Modify your walkspeed :D", 500, 0, function(s)
+    Player.Character.Humanoid.WalkSpeed = s
+end)
+
+Section2:NewSlider("JumpPower", "Modify your jumppower :D", 500, 0, function(s)
+    Player.Character.Humanoid.JumpPower = s
+end)
